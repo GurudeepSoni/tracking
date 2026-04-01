@@ -1,90 +1,91 @@
 import streamlit as st
 import cv2
 import mediapipe as mp
-import numpy as np
-from PIL import Image
 import tempfile
 
+# Page config
 st.set_page_config(page_title="Hand Tracking App")
 
 st.title("✋ Hand Tracking App")
 
-# Navbar
-
+# Sidebar menu
 option = st.sidebar.selectbox("Choose Mode", ["Live Camera", "Upload Video"])
 
+# Mediapipe setup
 mp_hands = mp.solutions.hands
 mp_draw = mp.solutions.drawing_utils
 
+
+# Hand tracking function
 def process_frame(frame, hands):
-frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-results = hands.process(frame_rgb)
+    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    results = hands.process(frame_rgb)
 
-```
-if results.multi_hand_landmarks:
-    for hand_landmarks in results.multi_hand_landmarks:
-        mp_draw.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+    if results.multi_hand_landmarks:
+        for hand_landmarks in results.multi_hand_landmarks:
+            mp_draw.draw_landmarks(
+                frame,
+                hand_landmarks,
+                mp_hands.HAND_CONNECTIONS
+            )
 
-return frame
-```
+    return frame
+
 
 # ------------------ LIVE CAMERA ------------------
-
 if option == "Live Camera":
-st.subheader("📷 Live Camera")
+    st.subheader("📷 Live Camera")
 
-```
-run = st.checkbox("Start Camera")
-
-FRAME_WINDOW = st.image([])
-
-cap = cv2.VideoCapture(0)
-
-with mp_hands.Hands(
-    min_detection_confidence=0.5,
-    min_tracking_confidence=0.5
-) as hands:
-
-    while run:
-        ret, frame = cap.read()
-        if not ret:
-            st.warning("Camera not working")
-            break
-
-        frame = process_frame(frame, hands)
-        FRAME_WINDOW.image(frame, channels="BGR")
-
-    cap.release()
-```
-
-# ------------------ VIDEO UPLOAD ------------------
-
-elif option == "Upload Video":
-st.subheader("📁 Upload Video")
-
-```
-uploaded_file = st.file_uploader("Upload a video", type=["mp4", "mov", "avi"])
-
-if uploaded_file is not None:
-    tfile = tempfile.NamedTemporaryFile(delete=False)
-    tfile.write(uploaded_file.read())
-
-    cap = cv2.VideoCapture(tfile.name)
-
+    run = st.checkbox("Start Camera")
     FRAME_WINDOW = st.image([])
 
-    with mp_hands.Hands(
-        min_detection_confidence=0.5,
-        min_tracking_confidence=0.5
-    ) as hands:
+    if run:
+        cap = cv2.VideoCapture(0)
 
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
+        with mp_hands.Hands(
+            min_detection_confidence=0.5,
+            min_tracking_confidence=0.5
+        ) as hands:
 
-            frame = process_frame(frame, hands)
-            FRAME_WINDOW.image(frame, channels="BGR")
+            while run:
+                ret, frame = cap.read()
+                if not ret:
+                    st.warning("Camera not working")
+                    break
 
-    cap.release()
-```
+                frame = process_frame(frame, hands)
+                FRAME_WINDOW.image(frame, channels="BGR")
+
+        cap.release()
+
+
+# ------------------ VIDEO UPLOAD ------------------
+elif option == "Upload Video":
+    st.subheader("📁 Upload Video")
+
+    uploaded_file = st.file_uploader(
+        "Upload a video",
+        type=["mp4", "mov", "avi"]
+    )
+
+    if uploaded_file is not None:
+        tfile = tempfile.NamedTemporaryFile(delete=False)
+        tfile.write(uploaded_file.read())
+
+        cap = cv2.VideoCapture(tfile.name)
+        FRAME_WINDOW = st.image([])
+
+        with mp_hands.Hands(
+            min_detection_confidence=0.5,
+            min_tracking_confidence=0.5
+        ) as hands:
+
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret:
+                    break
+
+                frame = process_frame(frame, hands)
+                FRAME_WINDOW.image(frame, channels="BGR")
+
+        cap.release()
