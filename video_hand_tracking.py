@@ -11,13 +11,9 @@ st.title("✋ Hand Tracking App")
 # Sidebar menu
 option = st.sidebar.selectbox("Choose Mode", ["Live Camera", "Upload Video"])
 
-# Mediapipe setup
-mp_hands = mp.solutions.hands
-mp_draw = mp.solutions.drawing_utils
-
 
 # Hand tracking function
-def process_frame(frame, hands):
+def process_frame(frame, hands, mp_draw, mp_hands):
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     results = hands.process(frame_rgb)
 
@@ -36,11 +32,17 @@ def process_frame(frame, hands):
 if option == "Live Camera":
     st.subheader("📷 Live Camera")
 
+    st.warning("⚠️ Live camera works only on local machine, not on Streamlit Cloud")
+
     run = st.checkbox("Start Camera")
     FRAME_WINDOW = st.image([])
 
     if run:
         cap = cv2.VideoCapture(0)
+
+        # ✅ Load mediapipe ONLY when needed
+        mp_hands = mp.solutions.hands
+        mp_draw = mp.solutions.drawing_utils
 
         with mp_hands.Hands(
             min_detection_confidence=0.5,
@@ -53,7 +55,7 @@ if option == "Live Camera":
                     st.warning("Camera not working")
                     break
 
-                frame = process_frame(frame, hands)
+                frame = process_frame(frame, hands, mp_draw, mp_hands)
                 FRAME_WINDOW.image(frame, channels="BGR")
 
         cap.release()
@@ -75,6 +77,10 @@ elif option == "Upload Video":
         cap = cv2.VideoCapture(tfile.name)
         FRAME_WINDOW = st.image([])
 
+        # ✅ Load mediapipe ONLY when needed
+        mp_hands = mp.solutions.hands
+        mp_draw = mp.solutions.drawing_utils
+
         with mp_hands.Hands(
             min_detection_confidence=0.5,
             min_tracking_confidence=0.5
@@ -85,7 +91,7 @@ elif option == "Upload Video":
                 if not ret:
                     break
 
-                frame = process_frame(frame, hands)
+                frame = process_frame(frame, hands, mp_draw, mp_hands)
                 FRAME_WINDOW.image(frame, channels="BGR")
 
         cap.release()
